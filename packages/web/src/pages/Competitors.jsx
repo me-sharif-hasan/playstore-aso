@@ -76,6 +76,8 @@ export default function Competitors() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('keywords'); // 'keywords' | 'profile'
 
+  const [competitorMeta, setCompetitorMeta] = useState({}); // { [appId]: { title, icon } }
+
   const { keywords } = useKeywords(selectedAppId);
   const snapshots = useKeywordSnapshots(selectedAppId);
   const rankChanges = useRankChanges(snapshots, keywords);
@@ -86,7 +88,17 @@ export default function Competitors() {
 
   useEffect(() => {
     if (!selectedAppId) return;
-    api.app.getCompetitors(selectedAppId).then(setCompetitors).catch(console.error);
+    api.app.getCompetitors(selectedAppId).then((list) => {
+      setCompetitors(list);
+      // Fetch metadata for any competitor not yet cached
+      list.forEach((cId) => {
+        if (!competitorMeta[cId]) {
+          api.app.get(cId).then((data) => {
+            setCompetitorMeta((prev) => ({ ...prev, [cId]: { title: data.title, icon: data.icon } }));
+          }).catch(() => {});
+        }
+      });
+    }).catch(console.error);
   }, [selectedAppId]);
 
   useEffect(() => {
@@ -98,15 +110,27 @@ export default function Competitors() {
       .finally(() => setCompareLoading(false));
   }, [selectedAppId, selectedCompetitor]);
 
-  const addCompetitor = async (appId) => {
+  const addCompetitor = async (app) => {
+    // accepts either an appId string or an app object from AppSearchInput
+    const appId = typeof app === 'string' ? app : app.appId;
     if (!appId || !selectedAppId) return;
     setAddLoading(true);
     setError('');
     try {
+      // Cache meta immediately if we have it from the search result
+      if (typeof app === 'object' && app.title) {
+        setCompetitorMeta((prev) => ({ ...prev, [appId]: { title: app.title, icon: app.icon } }));
+      }
       await api.app.addCompetitor(selectedAppId, appId);
       const updated = await api.app.getCompetitors(selectedAppId);
       setCompetitors(updated);
       setSelectedCompetitor(appId);
+      // Fetch full meta if not cached yet
+      if (!competitorMeta[appId]) {
+        api.app.get(appId).then((data) => {
+          setCompetitorMeta((prev) => ({ ...prev, [appId]: { title: data.title, icon: data.icon } }));
+        }).catch(() => {});
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -192,30 +216,39 @@ export default function Competitors() {
         <div className="flex gap-3 items-start">
           <AppSearchInput
             placeholder="Search Play Store for competitor..."
-            onSelect={(app) => addCompetitor(app.appId)}
+            onSelect={(app) => addCompetitor(app)}
           />
           {addLoading && <span className="text-sm text-gray-400 py-2">Adding...</span>}
         </div>
 
         {competitors.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">
-            {competitors.map((cId) => (
-              <button
-                key={cId}
-                onClick={() => setSelectedCompetitor(cId)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                  selectedCompetitor === cId
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
-                }`}
-              >
-                <span className="max-w-32 truncate">{cId.split('.').slice(-2).join('.')}</span>
-                <span
-                  onClick={(e) => { e.stopPropagation(); removeCompetitor(cId); }}
-                  className="opacity-60 hover:opacity-100 ml-1 cursor-pointer"
-                >×</span>
-              </button>
-            ))}
+            {competitors.map((cId) => {
+              const meta = competitorMeta[cId];
+              const isSelected = selectedCompetitor === cId;
+              return (
+                <button
+                  key={cId}
+                  onClick={() => setSelectedCompetitor(cId)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    isSelected
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+                  }`}
+                >
+                  {meta?.icon && (
+                    <img src={meta.icon} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
+                  )}
+                  <span className="max-w-36 truncate font-medium">
+                    {meta?.title || cId.split('.').slice(-2).join('.')}
+                  </span>
+                  <span
+                    onClick={(e) => { e.stopPropagation(); removeCompetitor(cId); }}
+                    className={`ml-0.5 cursor-pointer ${isSelected ? 'opacity-70 hover:opacity-100' : 'opacity-50 hover:opacity-100'}`}
+                  >×</span>
+                </button>
+              );
+            })}
           </div>
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}

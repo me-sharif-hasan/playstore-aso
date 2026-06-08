@@ -11,6 +11,7 @@ export default function Keywords() {
   const [newCountry, setNewCountry] = useState('us');
   const [adding, setAdding] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkRankLoading, setBulkRankLoading] = useState(false);
   const [rankLoading, setRankLoading] = useState({});
   const [error, setError] = useState('');
   const { keywords, loading, error: kwError } = useKeywords(selectedAppId);
@@ -77,6 +78,38 @@ export default function Keywords() {
     }
   };
 
+  const bulkRefreshRanks = async () => {
+    if (keywords.length === 0) return;
+    setBulkRankLoading(true);
+    setError('');
+    try {
+      for (const kw of keywords) {
+        const result = await api.keywords.rank(kw.id);
+        setEnriched((prev) => prev.map((k) =>
+          k.id === kw.id ? { ...k, position: result.position, competitor_positions: result.competitor_positions || {} } : k
+        ));
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBulkRankLoading(false);
+    }
+  };
+
+  const exportCsv = () => {
+    const rows = [['Keyword', 'Rank', 'Difficulty', 'Traffic', 'Country', 'Last Checked']];
+    enriched.forEach((kw) => {
+      const lastChecked = kw.lastChecked?.toDate ? kw.lastChecked.toDate().toISOString().split('T')[0]
+        : kw.lastChecked ? new Date(kw.lastChecked).toISOString().split('T')[0] : '';
+      rows.push([kw.keyword, kw.position ?? '', kw.difficulty ?? '', kw.traffic ?? '', kw.country || 'us', lastChecked]);
+    });
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'), { href: url, download: `keywords-${selectedAppId}.csv` }).click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -96,6 +129,21 @@ export default function Keywords() {
           >
             {bulkLoading ? 'Checking...' : 'Bulk Score Check'}
           </button>
+          <button
+            onClick={bulkRefreshRanks}
+            disabled={bulkRankLoading || keywords.length === 0}
+            className="px-4 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg font-medium disabled:opacity-50"
+          >
+            {bulkRankLoading ? 'Refreshing...' : 'Refresh All Ranks'}
+          </button>
+          {enriched.length > 0 && (
+            <button
+              onClick={exportCsv}
+              className="px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700 rounded-lg font-medium"
+            >
+              Export CSV
+            </button>
+          )}
         </div>
       </div>
 

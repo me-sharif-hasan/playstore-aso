@@ -211,6 +211,19 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'get_tracked_keywords_export',
+    description: 'Export all tracked keywords with positions, difficulty, traffic, and rank history for an app',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        api_key: { type: 'string' },
+        appId: { type: 'string' },
+        include_history: { type: 'boolean', description: 'Include last 30 days rank history per keyword (default: false)' },
+      },
+      required: ['api_key', 'appId'],
+    },
+  },
+  {
     name: 'get_aso_health_overview',
     description: 'Full ASO health report: score, keyword positions, top issues, recommendations',
     inputSchema: {
@@ -323,6 +336,39 @@ export const toolHandlers = {
     const doc = await db.collection('apps').doc(appId).get();
     const competitors = doc.exists ? (doc.data().competitors || []) : [];
     return { content: [{ type: 'text', text: JSON.stringify({ appId, competitors }, null, 2) }] };
+  },
+
+  get_tracked_keywords_export: async ({ appId, include_history = false }) => {
+    const snap = await db.collection('keywords').where('appId', '==', appId).get();
+    const keywords = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    if (include_history) {
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      for (const kw of keywords) {
+        const hSnap = await db.collection('keyword_snapshots')
+          .where('keywordId', '==', kw.id)
+          .where('date', '>=', since)
+          .orderBy('date', 'desc')
+          .get();
+        kw.history = hSnap.docs.map((d) => {
+          const data = d.data();
+          return { date: data.date?.toDate?.()?.toISOString() || data.date, position: data.position };
+        });
+      }
+    }
+
+    const summary = {
+      appId,
+      total: keywords.length,
+      ranked: keywords.filter((k) => k.position).length,
+      top3: keywords.filter((k) => k.position && k.position <= 3).length,
+      top10: keywords.filter((k) => k.position && k.position <= 10).length,
+      avgPosition: keywords.filter((k) => k.position).length
+        ? Math.round(keywords.filter((k) => k.position).reduce((s, k) => s + k.position, 0) / keywords.filter((k) => k.position).length)
+        : null,
+      keywords,
+    };
+    return { content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }] };
   },
 
   get_aso_health_overview: async ({ appId }) => {
