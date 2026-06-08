@@ -1,10 +1,27 @@
 import { Router } from 'express';
 import { db } from '../lib/firebase.js';
-import { getAppDetails } from '../services/playstore.js';
+import { getAppDetails, getKeywordRankWithCompetitors } from '../services/playstore.js';
 import { getKeywordScores, getKeywordSuggestions, bulkKeywordScores } from '../services/keywords.js';
-import { getKeywordRankWithCompetitors } from '../services/playstore.js';
 
 const router = Router();
+
+// GET /actions/apps — list all tracked apps + competitors for the API key owner
+router.get('/apps', async (req, res) => {
+  try {
+    const owner = req.mcpClient?.owner;
+    let snap;
+    if (owner) {
+      snap = await db.collection('apps').where('owner', '==', owner).get();
+    } else {
+      snap = await db.collection('apps').limit(50).get();
+    }
+    const data = snap.docs.map((d) => {
+      const a = d.data();
+      return { appId: a.appId, title: a.title, icon: a.icon, competitors: a.competitors || [] };
+    });
+    res.json({ success: true, data, total: data.length });
+  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
 
 // GET /actions/app/:appId
 router.get('/app/:appId', async (req, res) => {

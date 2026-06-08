@@ -48,6 +48,13 @@ app.get('/openapi.json', (req, res) => {
     },
     security: [{ ApiKeyAuth: [] }],
     paths: {
+      '/actions/apps': {
+        get: {
+          operationId: 'listTrackedApps',
+          summary: 'List all apps the user has added for tracking, with their competitors',
+          responses: { '200': { description: 'List of tracked apps with appId, title, icon, competitors array' } },
+        },
+      },
       '/actions/app/{appId}': {
         get: {
           operationId: 'getAppDetails',

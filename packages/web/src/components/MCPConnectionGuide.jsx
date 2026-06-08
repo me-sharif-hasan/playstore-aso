@@ -218,7 +218,8 @@ MCP_API_BASE_URL=https://aso-be.iishanto.com/api`;
         <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Available MCP Tools</p>
         <div className="flex flex-wrap gap-1.5">
           {[
-            'get_app_details', 'get_aso_score', 'get_keyword_rank', 'get_keyword_rank_history',
+            'list_tracked_apps', 'get_app_details', 'get_aso_score',
+            'get_keyword_rank', 'get_keyword_rank_history',
             'get_keyword_scores', 'get_keyword_suggestions', 'bulk_keyword_scores',
             'compare_competitors', 'get_keyword_gap', 'search_apps',
             'add_tracked_keyword', 'list_tracked_keywords', 'get_tracked_keywords_export',

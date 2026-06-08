@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { db } from '../lib/firebase.js';
+import { getClientByApiKey } from '../auth/index.js';
 
 const API_BASE = process.env.MCP_API_BASE_URL || 'http://localhost:3001/api';
 
@@ -211,6 +212,17 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'list_tracked_apps',
+    description: 'List all apps the user has added for tracking, with their competitors',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        api_key: { type: 'string' },
+      },
+      required: ['api_key'],
+    },
+  },
+  {
     name: 'get_tracked_keywords_export',
     description: 'Export all tracked keywords with positions, difficulty, traffic, and rank history for an app',
     inputSchema: {
@@ -336,6 +348,25 @@ export const toolHandlers = {
     const doc = await db.collection('apps').doc(appId).get();
     const competitors = doc.exists ? (doc.data().competitors || []) : [];
     return { content: [{ type: 'text', text: JSON.stringify({ appId, competitors }, null, 2) }] };
+  },
+
+  list_tracked_apps: async ({ api_key }) => {
+    const client = await getClientByApiKey(api_key);
+    if (!client?.owner) {
+      // MCP_DEFAULT_API_KEY fallback — no owner scope, return all apps (dev use)
+      const snap = await db.collection('apps').limit(50).get();
+      const apps = snap.docs.map((d) => {
+        const a = d.data();
+        return { appId: a.appId, title: a.title, icon: a.icon, competitors: a.competitors || [] };
+      });
+      return { content: [{ type: 'text', text: JSON.stringify({ apps, total: apps.length }, null, 2) }] };
+    }
+    const snap = await db.collection('apps').where('owner', '==', client.owner).get();
+    const apps = snap.docs.map((d) => {
+      const a = d.data();
+      return { appId: a.appId, title: a.title, icon: a.icon, competitors: a.competitors || [] };
+    });
+    return { content: [{ type: 'text', text: JSON.stringify({ apps, total: apps.length }, null, 2) }] };
   },
 
   get_tracked_keywords_export: async ({ appId, include_history = false }) => {

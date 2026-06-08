@@ -8,10 +8,19 @@ const PERMISSIONS_ALL = [
   'compare_competitors', 'get_keyword_gap', 'search_apps',
   'add_tracked_keyword', 'list_tracked_keywords', 'add_competitor',
   'list_competitors', 'get_aso_health_overview',
+  'list_tracked_apps', 'get_tracked_keywords_export',
 ];
 
 function hashKey(apiKey) {
   return crypto.createHash('sha256').update(apiKey).digest('hex');
+}
+
+export async function getClientByApiKey(apiKey) {
+  if (!apiKey) return null;
+  const hash = hashKey(apiKey);
+  const snap = await db.collection('mcp_clients').where('apiKeyHash', '==', hash).limit(1).get();
+  if (snap.empty) return null;
+  return { id: snap.docs[0].id, ...snap.docs[0].data() };
 }
 
 export async function verifyApiKey(apiKey, toolName) {
