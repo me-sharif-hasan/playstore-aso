@@ -25,6 +25,15 @@ function ScoreBar({ value = 0, color = 'bg-indigo-500' }) {
   );
 }
 
+function Spinner() {
+  return (
+    <svg className="animate-spin h-3.5 w-3.5 inline" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  );
+}
+
 function CompetitorPositions({ positions = {} }) {
   const entries = Object.entries(positions).filter(([, pos]) => pos !== null);
   if (entries.length === 0) return <span className="text-xs text-gray-300">—</span>;
@@ -44,7 +53,7 @@ function CompetitorPositions({ positions = {} }) {
   );
 }
 
-export default function KeywordTable({ keywords = [], onRemove, onCheckRank }) {
+export default function KeywordTable({ keywords = [], onRemove, onCheckRank, rankLoading = {}, removeLoading = {} }) {
   const [sortBy, setSortBy] = useState('keyword');
   const [sortDir, setSortDir] = useState('asc');
 
@@ -54,18 +63,18 @@ export default function KeywordTable({ keywords = [], onRemove, onCheckRank }) {
   };
 
   const sorted = [...keywords].sort((a, b) => {
-    let av = a[sortBy] ?? 999;
-    let bv = b[sortBy] ?? 999;
+    let av = a[sortBy] ?? (sortDir === 'asc' ? 999999 : -1);
+    let bv = b[sortBy] ?? (sortDir === 'asc' ? 999999 : -1);
     if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     return sortDir === 'asc' ? av - bv : bv - av;
   });
 
-  const SortHeader = ({ col, label }) => (
+  const SortHeader = ({ col, label, className = '' }) => (
     <th
-      className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-800 select-none"
+      className={`px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-800 select-none ${className}`}
       onClick={() => toggleSort(col)}
     >
-      {label} {sortBy === col ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+      {label} {sortBy === col ? (sortDir === 'asc' ? '↑' : '↓') : <span className="text-gray-300">↕</span>}
     </th>
   );
 
@@ -81,9 +90,9 @@ export default function KeywordTable({ keywords = [], onRemove, onCheckRank }) {
             {hasCompetitors && (
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Competitors</th>
             )}
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-36">Difficulty</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-36">Traffic</th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Country</th>
+            <SortHeader col="difficulty" label="Difficulty" className="w-36" />
+            <SortHeader col="traffic" label="Traffic" className="w-36" />
+            <SortHeader col="country" label="Country" />
             <th className="px-4 py-3" />
           </tr>
         </thead>
@@ -95,9 +104,13 @@ export default function KeywordTable({ keywords = [], onRemove, onCheckRank }) {
             <tr key={kw.id} className={`hover:bg-gray-50 ${rowBg(kw.position)}`}>
               <td className="px-4 py-3 text-sm font-medium text-gray-900">{kw.keyword}</td>
               <td className="px-4 py-3">
-                <span className={`text-sm ${positionColor(kw.position)}`}>
-                  {kw.position ? `#${kw.position}` : kw.lastChecked ? '—' : <span className="text-gray-300 text-xs">fetching...</span>}
-                </span>
+                {rankLoading[kw.id] ? (
+                  <span className="text-indigo-400"><Spinner /></span>
+                ) : (
+                  <span className={`text-sm ${positionColor(kw.position)}`}>
+                    {kw.position ? `#${kw.position}` : kw.lastChecked ? '—' : <span className="text-gray-300 text-xs">fetching...</span>}
+                  </span>
+                )}
               </td>
               {hasCompetitors && (
                 <td className="px-4 py-3">
@@ -112,15 +125,23 @@ export default function KeywordTable({ keywords = [], onRemove, onCheckRank }) {
               </td>
               <td className="px-4 py-3 text-sm text-gray-500">{kw.country || 'us'}</td>
               <td className="px-4 py-3">
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end items-center">
                   {onCheckRank && (
-                    <button onClick={() => onCheckRank(kw)} className="text-xs text-indigo-600 hover:underline">
-                      Refresh rank
+                    <button
+                      onClick={() => onCheckRank(kw)}
+                      disabled={!!rankLoading[kw.id]}
+                      className="text-xs text-indigo-600 hover:underline disabled:opacity-40 flex items-center gap-1"
+                    >
+                      {rankLoading[kw.id] ? <><Spinner /> Checking...</> : 'Refresh rank'}
                     </button>
                   )}
                   {onRemove && (
-                    <button onClick={() => onRemove(kw.id)} className="text-xs text-red-500 hover:underline">
-                      Remove
+                    <button
+                      onClick={() => onRemove(kw.id)}
+                      disabled={!!removeLoading[kw.id]}
+                      className="text-xs text-red-500 hover:underline disabled:opacity-40 flex items-center gap-1"
+                    >
+                      {removeLoading[kw.id] ? <><Spinner /> Removing...</> : 'Remove'}
                     </button>
                   )}
                 </div>

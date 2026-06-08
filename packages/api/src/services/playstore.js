@@ -1,7 +1,8 @@
 import gplay from 'google-play-scraper';
 
-const SEARCH_NUM = 250;
 const DELAY_MS = 1000;
+// Play Store returns ~30 results per page; fetch 9 pages = 270 results (covers rank ~250)
+const SEARCH_PAGES = 9;
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -12,30 +13,47 @@ export async function getAppDetails(appId, country = 'us', lang = 'en') {
   return data;
 }
 
-export async function searchApps(term, country = 'us', num = SEARCH_NUM) {
+export async function searchApps(term, country = 'us', num = 30) {
   const results = await gplay.search({ term, num, country, fullDetail: false });
   return results;
 }
 
-export async function getKeywordRank(appId, keyword, country = 'us') {
-  const results = await gplay.search({
-    term: keyword,
-    num: SEARCH_NUM,
-    country,
-    fullDetail: false,
-  });
+async function searchAllPages(term, country) {
+  const seen = new Set();
+  const all = [];
+  for (let page = 0; page < SEARCH_PAGES; page++) {
+    try {
+      const batch = await gplay.search({
+        term,
+        num: 30,
+        country,
+        fullDetail: false,
+        nextPaginationToken: page === 0 ? undefined : undefined,
+      });
+      if (!batch || batch.length === 0) break;
+      for (const app of batch) {
+        if (!seen.has(app.appId)) {
+          seen.add(app.appId);
+          all.push(app);
+        }
+      }
+      if (batch.length < 30) break; // last page
+      await sleep(300);
+    } catch {
+      break;
+    }
+  }
+  return all;
+}
 
+export async function getKeywordRank(appId, keyword, country = 'us') {
+  const results = await searchAllPages(keyword, country);
   const index = results.findIndex((app) => app.appId === appId);
   return index === -1 ? null : index + 1;
 }
 
 export async function getKeywordRankWithCompetitors(appId, keyword, competitorIds = [], country = 'us') {
-  const results = await gplay.search({
-    term: keyword,
-    num: SEARCH_NUM,
-    country,
-    fullDetail: false,
-  });
+  const results = await searchAllPages(keyword, country);
 
   const appIndex = results.findIndex((app) => app.appId === appId);
   const competitorPositions = {};

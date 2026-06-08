@@ -13,6 +13,7 @@ export default function Keywords() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkRankLoading, setBulkRankLoading] = useState(false);
   const [rankLoading, setRankLoading] = useState({});
+  const [removeLoading, setRemoveLoading] = useState({});
   const [error, setError] = useState('');
   const { keywords, loading, error: kwError } = useKeywords(selectedAppId);
   const [enriched, setEnriched] = useState([]);
@@ -38,10 +39,13 @@ export default function Keywords() {
   };
 
   const removeKeyword = async (kwId) => {
+    setRemoveLoading((prev) => ({ ...prev, [kwId]: true }));
     try {
       await api.keywords.remove(kwId);
     } catch (e) {
       setError(e.message);
+    } finally {
+      setRemoveLoading((prev) => ({ ...prev, [kwId]: false }));
     }
   };
 
@@ -192,7 +196,13 @@ export default function Keywords() {
       {loading ? (
         <div className="text-gray-400 text-sm">Loading keywords...</div>
       ) : (
-        <KeywordTable keywords={enriched} onRemove={removeKeyword} onCheckRank={checkRank} />
+        <KeywordTable
+          keywords={enriched}
+          onRemove={removeKeyword}
+          onCheckRank={checkRank}
+          rankLoading={rankLoading}
+          removeLoading={removeLoading}
+        />
       )}
     </div>
   );

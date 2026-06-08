@@ -23,16 +23,24 @@ export function startRankTracker() {
             kw.country || 'us'
           );
 
+          const now = new Date();
           await db.collection('keyword_snapshots').add({
             keywordId: kw.id,
             appId: kw.appId,
             position: result.position,
-            date: new Date(),
+            date: now,
             country: kw.country || 'us',
             competitor_positions: result.competitor_positions,
           });
 
-          console.log(`[cron] Snapshot saved: ${kw.keyword} → position ${result.position}`);
+          // Update keyword doc so UI shows latest position
+          await db.collection('keywords').doc(kw.id).update({
+            position: result.position,
+            competitor_positions: result.competitor_positions,
+            lastChecked: now,
+          });
+
+          console.log(`[cron] ${kw.keyword} → position ${result.position}`);
 
           // Throttle to avoid 503s
           await new Promise((r) => setTimeout(r, 1000));
