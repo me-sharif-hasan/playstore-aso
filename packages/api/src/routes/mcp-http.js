@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { TOOL_DEFINITIONS, toolHandlers } from '../../mcp/src/tools/index.js';
-import { verifyApiKey } from '../../mcp/src/auth/index.js';
+import { TOOL_DEFINITIONS, toolHandlers } from '../../../mcp/src/tools/index.js';
+import { verifyApiKey } from '../../../mcp/src/auth/index.js';
 
 const router = Router();
 

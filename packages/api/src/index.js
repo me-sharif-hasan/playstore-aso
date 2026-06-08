@@ -17,6 +17,7 @@ import { startRankTracker } from './jobs/cron-rank-tracker.js';
 const app = express();
 const PORT = process.env.API_PORT || 3001;
 
+app.set('trust proxy', 1); // behind Nginx
 app.use(morgan('dev'));
 app.use(helmet());
 app.use(cors());
