@@ -45,7 +45,7 @@ function Step({ n, title, children }) {
   );
 }
 
-const TABS = ['Claude Desktop', 'Claude Code', 'Cursor', 'ChatGPT'];
+const TABS = ['Claude Desktop', 'Claude Code', 'Cursor', 'ChatGPT (API Key)', 'ChatGPT (OAuth)'];
 
 export default function MCPConnectionGuide({ apiKey = 'YOUR_API_KEY' }) {
   const [tab, setTab] = useState('Claude Desktop');
@@ -185,8 +185,8 @@ MCP_API_BASE_URL=https://aso-be.iishanto.com/api`;
         </div>
       )}
 
-      {/* ChatGPT */}
-      {tab === 'ChatGPT' && (
+      {/* ChatGPT — API Key */}
+      {tab === 'ChatGPT (API Key)' && (
         <div className="space-y-4">
           <Step n={1} title="Get your API key from MCP API Keys section above">
             <p className="text-xs text-gray-500 mb-1">Your key: <code className="font-mono bg-gray-100 px-1 rounded text-indigo-600 break-all">{apiKey}</code></p>
@@ -209,6 +209,49 @@ MCP_API_BASE_URL=https://aso-be.iishanto.com/api`;
 
           <Step n={5} title="Save and test">
             <p className="text-xs text-gray-500">Ask ChatGPT: <em>"What's the keyword difficulty for 'ssh client'?"</em> or <em>"Show me my tracked keywords for [appId]"</em></p>
+          </Step>
+        </div>
+      )}
+
+      {/* ChatGPT — OAuth */}
+      {tab === 'ChatGPT (OAuth)' && (
+        <div className="space-y-4">
+          <Step n={1} title="Create an OAuth Client in the section below">
+            <p className="text-xs text-gray-500">Scroll down to <strong>ChatGPT OAuth Clients</strong> → click <strong>Create Client</strong> → save the Client ID and Secret.</p>
+          </Step>
+
+          <Step n={2} title="In ChatGPT: New App → Server URL → add MCP server">
+            <CodeBlock code="https://aso-be.iishanto.com/mcp" />
+          </Step>
+
+          <Step n={3} title="Set authentication to OAuth (User-Defined)">
+            <p className="text-xs text-gray-500 mb-2">Fill in the OAuth fields:</p>
+            <div className="space-y-1.5 text-xs">
+              {[
+                ['Authorization URL', 'https://aso-be.iishanto.com/oauth/authorize'],
+                ['Token URL', 'https://aso-be.iishanto.com/oauth/token'],
+                ['Scope', 'aso:read aso:write'],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                  <span className="text-gray-500">{label}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-gray-700">{value}</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(value)}
+                      className="text-xs px-1.5 py-0.5 rounded bg-gray-200 hover:bg-gray-300 text-gray-600"
+                    >Copy</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Step>
+
+          <Step n={4} title="Paste your Client ID and Secret from step 1">
+            <p className="text-xs text-gray-500">Copy the <strong>callback URL</strong> shown by ChatGPT (e.g. <code className="bg-gray-100 px-1 rounded">https://chatgpt.com/connector/oauth/...</code>) and paste it into the OAuth Client's redirect URI field in the <em>ChatGPT OAuth Clients</em> section below.</p>
+          </Step>
+
+          <Step n={5} title="Save and authorize">
+            <p className="text-xs text-gray-500">ChatGPT redirects you to the ASO login page. Sign in with your account. ChatGPT gets a token automatically — no key pasting needed for future sessions.</p>
           </Step>
         </div>
       )}

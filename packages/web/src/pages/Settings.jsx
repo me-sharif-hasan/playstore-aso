@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTrackedApps } from '../hooks/useApp.js';
 import MCPKeyManager from '../components/MCPKeyManager.jsx';
 import MCPConnectionGuide from '../components/MCPConnectionGuide.jsx';
+import OAuthClientManager from '../components/OAuthClientManager.jsx';
 import AppSearchInput from '../components/AppSearchInput.jsx';
 import { api } from '../lib/api.js';
 import { auth } from '../lib/firebase.js';
@@ -105,6 +106,18 @@ export default function Settings() {
           </p>
         </div>
         <MCPConnectionGuide apiKey={latestApiKey || 'YOUR_API_KEY'} />
+      </section>
+
+      <hr className="border-gray-200" />
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800">ChatGPT OAuth Clients</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Create OAuth clients so ChatGPT can authenticate via OAuth instead of pasting API keys.
+          </p>
+        </div>
+        <OAuthClientManager />
       </section>
 
       <hr className="border-gray-200" />

@@ -11,6 +11,7 @@ import competitorRoutes from './routes/competitor.js';
 import asoRoutes from './routes/aso.js';
 import actionsRoutes from './routes/actions.js';
 import mcpHttpRoutes from './routes/mcp-http.js';
+import { router as oauthRouter, oauthMetaHandler } from './routes/oauth.js';
 import { startRankTracker } from './jobs/cron-rank-tracker.js';
 
 const app = express();
@@ -34,6 +35,10 @@ app.use('/actions', requireMcpKey, actionsRoutes);
 // Native MCP over HTTP (StreamableHTTP transport) — for ChatGPT, Claude.ai, Cursor
 // Auth: pass api_key in tool args OR Authorization: Bearer <mcp-key> header
 app.use('/mcp', mcpHttpRoutes);
+
+// OAuth 2.0 authorization server
+app.get('/.well-known/oauth-authorization-server', oauthMetaHandler);
+app.use('/oauth', oauthRouter);
 
 // OpenAPI spec for ChatGPT Actions import (public)
 app.get('/openapi.json', (req, res) => {

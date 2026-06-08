@@ -8,6 +8,7 @@ import Keywords from './pages/Keywords.jsx';
 import Competitors from './pages/Competitors.jsx';
 import KeywordResearch from './pages/KeywordResearch.jsx';
 import Settings from './pages/Settings.jsx';
+import OAuthAuthorize from './pages/OAuthAuthorize.jsx';
 
 function Layout({ children }) {
   const navigate = useNavigate();
@@ -73,6 +74,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+        <Route path="/oauth/authorize" element={<OAuthAuthorize />} />
         <Route path="/" element={<ProtectedRoute user={user}><Dashboard /></ProtectedRoute>} />
         <Route path="/keywords" element={<ProtectedRoute user={user}><Keywords /></ProtectedRoute>} />
         <Route path="/competitors" element={<ProtectedRoute user={user}><Competitors /></ProtectedRoute>} />
