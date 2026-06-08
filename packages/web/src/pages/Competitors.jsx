@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTrackedApps } from '../hooks/useApp.js';
 import { useKeywords, useKeywordSnapshots } from '../hooks/useKeywords.js';
+import { useRankQueue } from '../hooks/useRankQueue.js';
 import CompetitorCompare from '../components/CompetitorCompare.jsx';
 import AppSearchInput from '../components/AppSearchInput.jsx';
 import { api } from '../lib/api.js';
@@ -81,6 +82,7 @@ export default function Competitors() {
   const { keywords } = useKeywords(selectedAppId);
   const snapshots = useKeywordSnapshots(selectedAppId);
   const rankChanges = useRankChanges(snapshots, keywords);
+  const { active: queueActive, done: queueDone, items: queueItems } = useRankQueue(selectedAppId);
 
   useEffect(() => {
     if (apps.length > 0 && !selectedAppId) setSelectedAppId(apps[0].appId);
@@ -253,6 +255,66 @@ export default function Competitors() {
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
       </div>
+
+      {/* Rank queue panel */}
+      {queueItems.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700">Rank Refresh Queue</span>
+              {queueActive.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                  </svg>
+                  {queueActive.length} processing
+                </span>
+              )}
+              {queueActive.length === 0 && queueDone.length > 0 && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Complete</span>
+              )}
+            </div>
+            <span className="text-xs text-gray-400">{queueDone.length}/{queueItems.length} done</span>
+          </div>
+          <div className="divide-y divide-gray-50 max-h-48 overflow-y-auto">
+            {queueItems.map((item) => (
+              <div key={item.id} className="px-4 py-2 flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  {item.status === 'processing' && (
+                    <svg className="animate-spin h-3.5 w-3.5 text-indigo-500 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                    </svg>
+                  )}
+                  {item.status === 'pending' && <span className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 flex-shrink-0" />}
+                  {item.status === 'done' && <span className="text-green-500 flex-shrink-0">✓</span>}
+                  {item.status === 'error' && <span className="text-red-500 flex-shrink-0">✗</span>}
+                  <span className="text-gray-700 truncate font-medium">{item.keyword}</span>
+                  <span className="text-xs text-gray-400 flex-shrink-0 truncate max-w-24">
+                    via {item.competitorId?.split('.').pop()}
+                  </span>
+                </div>
+                <div className="flex-shrink-0 ml-3">
+                  {item.status === 'done' && (
+                    <span className={`text-xs font-semibold ${
+                      !item.position ? 'text-gray-400' :
+                      item.position <= 3 ? 'text-green-600' :
+                      item.position <= 10 ? 'text-amber-600' : 'text-gray-600'
+                    }`}>
+                      {item.position ? `#${item.position}` : 'not ranked'}
+                    </span>
+                  )}
+                  {item.status === 'error' && <span className="text-xs text-red-400">{item.error?.slice(0, 30)}</span>}
+                  {(item.status === 'pending' || item.status === 'processing') && (
+                    <span className="text-xs text-gray-300">—</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats row */}
       {stats && selectedCompetitor && (

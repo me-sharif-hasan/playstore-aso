@@ -1,7 +1,60 @@
 import { Router } from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../lib/firebase.js';
-import { getAppDetails } from '../services/playstore.js';
+import { getAppDetails, getKeywordRankWithCompetitors } from '../services/playstore.js';
+
+async function queueCompetitorRankFetch(appId, competitorId, allCompetitors) {
+  try {
+    const kwSnap = await db.collection('keywords').where('appId', '==', appId).get();
+    const keywords = kwSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (keywords.length === 0) return;
+
+    // Create queue items
+    const batch = db.batch();
+    const queueRefs = keywords.map((kw) => {
+      const ref = db.collection('rank_queue').doc();
+      batch.set(ref, {
+        keywordId: kw.id, keyword: kw.keyword,
+        appId, competitorId,
+        status: 'pending',
+        position: null, error: null,
+        createdAt: new Date(),
+      });
+      return { ref, kw };
+    });
+    await batch.commit();
+
+    // Process sequentially
+    for (const { ref, kw } of queueRefs) {
+      await ref.update({ status: 'processing' });
+      try {
+        const result = await getKeywordRankWithCompetitors(
+          appId, kw.keyword, allCompetitors, kw.country || 'us'
+        );
+        const now = new Date();
+        await db.collection('keyword_snapshots').add({
+          keywordId: kw.id, appId,
+          position: result.position,
+          date: now, country: kw.country || 'us',
+          competitor_positions: result.competitor_positions,
+        });
+        await db.collection('keywords').doc(kw.id).update({
+          position: result.position,
+          competitor_positions: result.competitor_positions,
+          lastChecked: now,
+        });
+        await ref.update({ status: 'done', position: result.position, completedAt: now });
+      } catch (e) {
+        await ref.update({ status: 'error', error: e.message, completedAt: new Date() });
+        console.error(`[queue] ${kw.keyword} failed:`, e.message);
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    console.log(`[queue] Competitor rank refresh complete for ${competitorId}`);
+  } catch (e) {
+    console.error('[queue] queueCompetitorRankFetch failed:', e.message);
+  }
+}
 
 const router = Router();
 
@@ -98,7 +151,14 @@ router.post('/:appId/competitor', async (req, res) => {
 
     await appRef.update({ competitors: FieldValue.arrayUnion(competitorId) });
 
+    // Get updated full competitor list for rank fetch
+    const updatedDoc = await appRef.get();
+    const allCompetitors = updatedDoc.data().competitors || [];
+
     res.json({ success: true, data: { competitorId } });
+
+    // Non-blocking: queue rank refresh for all keywords with new competitor included
+    queueCompetitorRankFetch(appId, competitorId, allCompetitors);
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
