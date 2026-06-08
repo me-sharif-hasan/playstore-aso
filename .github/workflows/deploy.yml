@@ -34,6 +34,10 @@ jobs:
             echo "==> Installing dependencies..."
             npm install --prefer-offline
 
+            echo "==> Restoring frontend env (not in repo)..."
+            # packages/web/.env is gitignored — preserve it across deploys
+            [ -f /var/www/aso_mcp/packages/web/.env ] || echo "WARN: packages/web/.env missing, rebuild may fail"
+
             echo "==> Building frontend..."
             npm run build --workspace=packages/web
 
