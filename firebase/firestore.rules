@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    match /apps/{appId} {
+      allow read, write: if request.auth != null &&
+        resource.data.owner == request.auth.uid;
+    }
+
+    match /keywords/{kwId} {
+      allow read, write: if request.auth != null &&
+        resource.data.owner == request.auth.uid;
+    }
+
+    match /keyword_snapshots/{snapId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /keyword_scores/{scoreId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /mcp_clients/{clientId} {
+      allow read, write: if request.auth != null &&
+        resource.data.owner == request.auth.uid;
+    }
+
+    match /competitor_analysis/{analysisId} {
+      allow read, write: if request.auth != null &&
+        resource.data.owner == request.auth.uid;
+    }
+  }
+}

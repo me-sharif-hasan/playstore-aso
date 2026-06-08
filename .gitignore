@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+
+# Secrets - never commit these
+.env
+.env.*
+!.env.example
+service-account.json
+*.key
+*.pem
+
+# IDE
+.vscode/
+.idea/
+
+# Deploy scripts (contain credentials)
+deploy.py
+deploy_continue.py
+
+# Build output
+packages/web/dist/

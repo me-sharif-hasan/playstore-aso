@@ -1,0 +1,37 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "keywords",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "appId", "order": "ASCENDING" },
+        { "fieldPath": "owner", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "keyword_snapshots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "keywordId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "keyword_snapshots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "appId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "competitor_analysis",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "appId", "order": "ASCENDING" },
+        { "fieldPath": "owner", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

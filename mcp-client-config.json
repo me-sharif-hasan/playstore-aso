@@ -1,0 +1,12 @@
+{
+  "aso-intelligence": {
+    "command": "node",
+    "args": ["/path/to/aso-platform/packages/mcp/src/index.js"],
+    "env": {
+      "MCP_API_KEY": "your-api-key-here",
+      "FIREBASE_SERVICE_ACCOUNT_PATH": "/path/to/serviceAccount.json",
+      "FIREBASE_PROJECT_ID": "your-project-id",
+      "MCP_API_BASE_URL": "http://localhost:3001/api"
+    }
+  }
+}

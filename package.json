@@ -1,0 +1,15 @@
+{
+  "name": "aso-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=packages/api",
+    "dev:web": "npm run dev --workspace=packages/web",
+    "start:mcp": "node packages/mcp/src/index.js",
+    "install:all": "npm install",
+    "build": "npm run build --workspaces"
+  }
+}

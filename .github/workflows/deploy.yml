@@ -1,0 +1,49 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy ASO Platform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -e
+            DEPLOY_DIR=/var/www/aso_mcp
+
+            echo "==> Pulling latest code..."
+            cd $DEPLOY_DIR
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "==> Installing dependencies..."
+            npm install --prefer-offline
+
+            echo "==> Building frontend..."
+            npm run build --workspace=packages/web
+
+            echo "==> Restarting API..."
+            pm2 restart aso-api --update-env
+            pm2 save
+
+            echo "==> Verifying..."
+            sleep 2
+            pm2 show aso-api | grep -E "status|uptime|restarts"
+            curl -sf http://localhost:3001/health && echo " API health OK" || echo " API health FAIL"
+
+            echo "==> Deploy complete"
