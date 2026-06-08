@@ -22,6 +22,7 @@ app.use(morgan('dev'));
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false })); // OAuth token endpoint sends form-encoded
 app.use(apiRateLimit);
 
 app.use('/api/app', requireAuth, appRoutes);
@@ -39,6 +40,13 @@ app.use('/mcp', mcpHttpRoutes);
 
 // OAuth 2.0 authorization server
 app.get('/.well-known/oauth-authorization-server', oauthMetaHandler);
+// RFC 9728 — MCP clients look here to discover the authorization server
+app.get('/.well-known/oauth-protected-resource', (req, res) => {
+  res.json({
+    resource: 'https://aso-be.iishanto.com/mcp',
+    authorization_servers: ['https://aso-be.iishanto.com'],
+  });
+});
 app.use('/oauth', oauthRouter);
 
 // OpenAPI spec for ChatGPT Actions import (public)

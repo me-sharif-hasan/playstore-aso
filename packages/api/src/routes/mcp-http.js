@@ -36,6 +36,12 @@ router.all('/', async (req, res) => {
       ? authHeader.slice(7).trim()
       : undefined;
 
+    // StreamableHTTPServerTransport returns 406 if Accept doesn't include both
+    // application/json and text/event-stream — ChatGPT may omit one or both
+    if (!req.headers.accept?.includes('text/event-stream')) {
+      req.headers.accept = 'application/json, text/event-stream';
+    }
+
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     const server = createMcpServer(apiKeyFromHeader);
 
