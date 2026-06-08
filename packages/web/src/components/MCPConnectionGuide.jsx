@@ -189,46 +189,27 @@ MCP_API_BASE_URL=https://aso-be.iishanto.com/api`;
       {tab === 'ChatGPT' && (
         <div className="space-y-4">
           <Step n={1} title="Get your API key from MCP API Keys section above">
-            <p className="text-xs text-gray-500">Generate a key, then come back here. Your key: <code className="font-mono bg-gray-100 px-1 rounded text-indigo-600">{apiKey}</code></p>
+            <p className="text-xs text-gray-500 mb-1">Your key: <code className="font-mono bg-gray-100 px-1 rounded text-indigo-600 break-all">{apiKey}</code></p>
           </Step>
 
-          <Step n={2} title="Create a Custom GPT in ChatGPT">
-            <p className="text-xs text-gray-500">Go to <strong>chatgpt.com → Explore GPTs → Create</strong> → Configure → Add actions</p>
+          <Step n={2} title="Open ChatGPT → click your avatar → Settings → Connected apps / MCP">
+            <p className="text-xs text-gray-500">Or go to <strong>chatgpt.com → top-right menu → Add apps</strong> → New App</p>
           </Step>
 
-          <Step n={3} title='Click "Import from URL" and paste this URL'>
-            <CodeBlock code="https://aso-be.iishanto.com/openapi.json" />
-            <p className="text-xs text-gray-400 mt-1">ChatGPT will auto-import all available endpoints from the OpenAPI schema.</p>
+          <Step n={3} title="Enter the MCP server URL">
+            <CodeBlock code="https://aso-be.iishanto.com/mcp" />
+            <p className="text-xs text-gray-400 mt-1">Select <strong>Server URL</strong> (not Tunnel). This is a native MCP over HTTP endpoint.</p>
           </Step>
 
-          <Step n={4} title="Set authentication">
-            <p className="text-xs text-gray-500 mb-2">In the Actions auth section, select <strong>API Key</strong> → <strong>Bearer</strong>, then paste your key:</p>
+          <Step n={4} title="Set authentication to Mixed, paste your API key">
+            <p className="text-xs text-gray-500 mb-2">Select <strong>Mixed</strong> auth → paste key as Bearer token:</p>
             <CodeBlock code={apiKey} />
+            <p className="text-xs text-gray-400 mt-1">Alternatively use <strong>No Auth</strong> and pass <code className="bg-gray-100 px-1 rounded">api_key</code> in every tool call.</p>
           </Step>
 
           <Step n={5} title="Save and test">
-            <p className="text-xs text-gray-500">Ask your GPT: <em>"What's the difficulty score for keyword 'ssh client'?"</em> or <em>"List tracked keywords for com.example.app"</em></p>
+            <p className="text-xs text-gray-500">Ask ChatGPT: <em>"What's the keyword difficulty for 'ssh client'?"</em> or <em>"Show me my tracked keywords for [appId]"</em></p>
           </Step>
-
-          <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-            <p className="text-xs font-semibold text-gray-600 mb-1.5">Available via ChatGPT Actions</p>
-            <div className="grid grid-cols-2 gap-1 text-xs text-gray-500">
-              {[
-                ['GET', '/actions/app/:appId', 'App details'],
-                ['GET', '/actions/keyword/scores', 'Keyword difficulty + traffic'],
-                ['GET', '/actions/keyword/suggest', 'Keyword suggestions'],
-                ['POST', '/actions/keyword/bulk-scores', 'Bulk keyword scores'],
-                ['GET', '/actions/keyword/rank', 'Live Play Store rank'],
-                ['GET', '/actions/keywords/:appId', 'Tracked keywords list'],
-                ['GET', '/actions/competitor/compare', 'Competitor comparison'],
-              ].map(([method, path, desc]) => (
-                <div key={path} className="flex gap-1.5 items-start">
-                  <span className={`font-mono font-semibold flex-shrink-0 ${method === 'POST' ? 'text-amber-600' : 'text-green-600'}`}>{method}</span>
-                  <span className="font-mono text-gray-500 truncate">{path}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
