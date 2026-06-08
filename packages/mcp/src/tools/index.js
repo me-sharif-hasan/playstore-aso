@@ -24,6 +24,8 @@ async function apiPost(path, body = {}) {
   return json.data;
 }
 
+// api_key is optional in all tools — when connecting via OAuth or Bearer header,
+// the server injects it automatically. Only needed for stdio/local MCP.
 export const TOOL_DEFINITIONS = [
   {
     name: 'get_app_details',
@@ -31,11 +33,11 @@ export const TOOL_DEFINITIONS = [
     inputSchema: {
       type: 'object',
       properties: {
-        api_key: { type: 'string', description: 'MCP API key' },
+        api_key: { type: 'string', description: 'MCP API key (not needed when using OAuth/Bearer auth)' },
         appId: { type: 'string', description: 'App package name (e.g. com.example.app)' },
         country: { type: 'string', description: 'Country code (default: us)' },
       },
-      required: ['api_key', 'appId'],
+      required: ['appId'],
     },
   },
   {
@@ -49,7 +51,7 @@ export const TOOL_DEFINITIONS = [
         keyword: { type: 'string' },
         country: { type: 'string' },
       },
-      required: ['api_key', 'appId', 'keyword'],
+      required: ['appId', 'keyword'],
     },
   },
   {
@@ -63,7 +65,7 @@ export const TOOL_DEFINITIONS = [
         keyword: { type: 'string' },
         country: { type: 'string' },
       },
-      required: ['api_key', 'appId', 'keyword'],
+      required: ['appId', 'keyword'],
     },
   },
   {
@@ -77,7 +79,7 @@ export const TOOL_DEFINITIONS = [
         keyword: { type: 'string' },
         days: { type: 'number', description: 'Days of history (default: 30)' },
       },
-      required: ['api_key', 'appId', 'keyword'],
+      required: ['appId', 'keyword'],
     },
   },
   {
@@ -90,7 +92,7 @@ export const TOOL_DEFINITIONS = [
         keyword: { type: 'string' },
         country: { type: 'string' },
       },
-      required: ['api_key', 'keyword'],
+      required: ['keyword'],
     },
   },
   {
@@ -104,7 +106,7 @@ export const TOOL_DEFINITIONS = [
         appId: { type: 'string' },
         country: { type: 'string' },
       },
-      required: ['api_key', 'keyword', 'appId'],
+      required: ['keyword', 'appId'],
     },
   },
   {
@@ -117,7 +119,7 @@ export const TOOL_DEFINITIONS = [
         keywords: { type: 'array', items: { type: 'string' } },
         country: { type: 'string' },
       },
-      required: ['api_key', 'keywords'],
+      required: ['keywords'],
     },
   },
   {
@@ -131,7 +133,7 @@ export const TOOL_DEFINITIONS = [
         competitorId: { type: 'string' },
         country: { type: 'string' },
       },
-      required: ['api_key', 'appId', 'competitorId'],
+      required: ['appId', 'competitorId'],
     },
   },
   {
@@ -144,7 +146,7 @@ export const TOOL_DEFINITIONS = [
         appId: { type: 'string' },
         competitorId: { type: 'string' },
       },
-      required: ['api_key', 'appId', 'competitorId'],
+      required: ['appId', 'competitorId'],
     },
   },
   {
@@ -157,7 +159,7 @@ export const TOOL_DEFINITIONS = [
         term: { type: 'string' },
         country: { type: 'string' },
       },
-      required: ['api_key', 'term'],
+      required: ['term'],
     },
   },
   {
@@ -171,7 +173,7 @@ export const TOOL_DEFINITIONS = [
         keyword: { type: 'string' },
         country: { type: 'string' },
       },
-      required: ['api_key', 'appId', 'keyword'],
+      required: ['appId', 'keyword'],
     },
   },
   {
@@ -183,7 +185,7 @@ export const TOOL_DEFINITIONS = [
         api_key: { type: 'string' },
         appId: { type: 'string' },
       },
-      required: ['api_key', 'appId'],
+      required: ['appId'],
     },
   },
   {
@@ -196,7 +198,7 @@ export const TOOL_DEFINITIONS = [
         appId: { type: 'string' },
         competitorId: { type: 'string' },
       },
-      required: ['api_key', 'appId', 'competitorId'],
+      required: ['appId', 'competitorId'],
     },
   },
   {
@@ -208,7 +210,7 @@ export const TOOL_DEFINITIONS = [
         api_key: { type: 'string' },
         appId: { type: 'string' },
       },
-      required: ['api_key', 'appId'],
+      required: ['appId'],
     },
   },
   {
@@ -219,7 +221,7 @@ export const TOOL_DEFINITIONS = [
       properties: {
         api_key: { type: 'string' },
       },
-      required: ['api_key'],
+      required: [],
     },
   },
   {
@@ -232,19 +234,19 @@ export const TOOL_DEFINITIONS = [
         appId: { type: 'string' },
         include_history: { type: 'boolean', description: 'Include last 30 days rank history per keyword (default: false)' },
       },
-      required: ['api_key', 'appId'],
+      required: ['appId'],
     },
   },
   {
     name: 'get_aso_health_overview',
-    description: 'Full ASO health report: score, keyword positions, top issues, recommendations',
+    description: 'Full ASO health report: overall score based on all tracked keywords, positions, issues, recommendations',
     inputSchema: {
       type: 'object',
       properties: {
         api_key: { type: 'string' },
         appId: { type: 'string' },
       },
-      required: ['api_key', 'appId'],
+      required: ['appId'],
     },
   },
 ];
@@ -261,7 +263,6 @@ export const toolHandlers = {
   },
 
   get_keyword_rank: async ({ appId, keyword, country }) => {
-    // Direct service call - search and find position
     const gplay = (await import('google-play-scraper')).default;
     const results = await gplay.search({ term: keyword, num: 250, country: country || 'us', fullDetail: false });
     const index = results.findIndex((a) => a.appId === appId);
@@ -285,8 +286,6 @@ export const toolHandlers = {
   },
 
   get_keyword_scores: async ({ keyword, country }) => {
-    const { getKeywordScores } = await import('../../../api/src/services/keywords.js').catch(() => null) || {};
-    // Fallback: call API directly
     const data = await apiGet('/keyword/scores', { keyword, country });
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
   },
@@ -353,7 +352,6 @@ export const toolHandlers = {
   list_tracked_apps: async ({ api_key }) => {
     const client = await getClientByApiKey(api_key);
     if (!client?.owner) {
-      // MCP_DEFAULT_API_KEY fallback — no owner scope, return all apps (dev use)
       const snap = await db.collection('apps').limit(50).get();
       const apps = snap.docs.map((d) => {
         const a = d.data();
@@ -406,24 +404,77 @@ export const toolHandlers = {
     const gplay = (await import('google-play-scraper')).default;
     const { calculateAsoScore } = await import('../../../api/src/services/scoring.js');
 
-    const appData = await gplay.app({ appId, country: 'us' });
-    const asoScore = calculateAsoScore(appData, '');
+    const [appData, kwSnap] = await Promise.all([
+      gplay.app({ appId, country: 'us' }),
+      db.collection('keywords').where('appId', '==', appId).get(),
+    ]);
 
-    const kwSnap = await db.collection('keywords').where('appId', '==', appId).get();
     const trackedKeywords = kwSnap.docs.map((d) => d.data());
 
+    // Calculate per-keyword ASO score, then average
+    let keywordScores = [];
+    if (trackedKeywords.length > 0) {
+      keywordScores = trackedKeywords.map((kw) => {
+        const s = calculateAsoScore(appData, kw.keyword);
+        return { keyword: kw.keyword, position: kw.position || null, asoScore: s.total, breakdown: s.breakdown };
+      });
+    }
+
+    // App-level score (no keyword — only store/engagement factors)
+    const appLevelScore = calculateAsoScore(appData, '');
+
+    // Overall = average of keyword scores if available, else app-level (engagement-only)
+    const avgKeywordScore = keywordScores.length
+      ? Math.round(keywordScores.reduce((s, k) => s + k.asoScore, 0) / keywordScores.length)
+      : null;
+
+    // Store metrics (keyword-independent)
+    const storeMetrics = {
+      rating: appLevelScore.breakdown.rating,
+      installVelocity: appLevelScore.breakdown.installVelocity,
+      updateRecency: appLevelScore.breakdown.updateRecency,
+      reviewCount: appLevelScore.breakdown.reviewCount,
+      screenshots: appLevelScore.breakdown.screenshots,
+    };
+
+    const overallScore = avgKeywordScore ?? Math.round(
+      storeMetrics.rating * 0.30 +
+      storeMetrics.installVelocity * 0.20 +
+      storeMetrics.updateRecency * 0.20 +
+      storeMetrics.reviewCount * 0.15 +
+      storeMetrics.screenshots * 0.15
+    );
+
     const issues = [];
-    if (asoScore.breakdown.updateRecency < 60) issues.push('App not updated recently');
-    if (asoScore.breakdown.screenshots < 80) issues.push('Insufficient screenshots');
-    if (asoScore.breakdown.rating < 60) issues.push('Rating below average');
-    if (asoScore.breakdown.reviewCount < 60) issues.push('Low review count');
+    if (storeMetrics.updateRecency < 60) issues.push('App not updated recently — update at least every 2 months');
+    if (storeMetrics.screenshots < 80) issues.push('Add more screenshots (target: 8)');
+    if (storeMetrics.rating < 60) issues.push('Rating below 4.0 — address negative reviews');
+    if (storeMetrics.reviewCount < 60) issues.push('Low review count — encourage users to review');
+    if (trackedKeywords.length === 0) issues.push('No tracked keywords — add keywords to enable keyword scoring');
+
+    const rankedKeywords = keywordScores.filter((k) => k.position);
+    const unrankedKeywords = keywordScores.filter((k) => !k.position);
 
     const report = {
       appId,
       title: appData.title,
-      asoScore: asoScore.total,
-      breakdown: asoScore.breakdown,
-      trackedKeywords: trackedKeywords.length,
+      overallAsoScore: overallScore,
+      scoringBasis: keywordScores.length > 0 ? `Average across ${keywordScores.length} tracked keywords` : 'Store metrics only (no tracked keywords)',
+      storeMetrics,
+      keywordPerformance: {
+        total: trackedKeywords.length,
+        ranked: rankedKeywords.length,
+        unranked: unrankedKeywords.length,
+        top3: rankedKeywords.filter((k) => k.position <= 3).length,
+        top10: rankedKeywords.filter((k) => k.position <= 10).length,
+        avgPosition: rankedKeywords.length
+          ? Math.round(rankedKeywords.reduce((s, k) => s + k.position, 0) / rankedKeywords.length)
+          : null,
+      },
+      topKeywords: keywordScores
+        .sort((a, b) => (a.position || 999) - (b.position || 999))
+        .slice(0, 10)
+        .map((k) => ({ keyword: k.keyword, position: k.position, asoScore: k.asoScore })),
       issues,
       recommendations: issues.map((i) => `Fix: ${i}`),
     };
