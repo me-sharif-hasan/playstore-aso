@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTrackedApps } from '../hooks/useApp.js';
 import MCPKeyManager from '../components/MCPKeyManager.jsx';
+import MCPConnectionGuide from '../components/MCPConnectionGuide.jsx';
 import AppSearchInput from '../components/AppSearchInput.jsx';
 import { api } from '../lib/api.js';
 import { auth } from '../lib/firebase.js';
@@ -11,6 +12,7 @@ export default function Settings() {
   const [addLoading, setAddLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [latestApiKey, setLatestApiKey] = useState('');
 
   const addApp = async () => {
     if (!newAppId.trim()) return;
@@ -89,7 +91,20 @@ export default function Settings() {
             Generate API keys for Claude Desktop, Claude Code, or other AI agents.
           </p>
         </div>
-        <MCPKeyManager />
+        <MCPKeyManager onKeyGenerated={setLatestApiKey} />
+      </section>
+
+      <hr className="border-gray-200" />
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800">Connect to AI Assistants</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Use your API key to connect Claude, ChatGPT, or Cursor to your ASO data.
+            {!latestApiKey && <span className="ml-1 text-indigo-500">Generate a key above to auto-fill configs.</span>}
+          </p>
+        </div>
+        <MCPConnectionGuide apiKey={latestApiKey || 'YOUR_API_KEY'} />
       </section>
 
       <hr className="border-gray-200" />

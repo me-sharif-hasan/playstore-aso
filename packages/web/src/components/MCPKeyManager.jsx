@@ -21,7 +21,7 @@ const ALL_PERMISSIONS = [
   'list_competitors', 'get_aso_health_overview',
 ];
 
-export default function MCPKeyManager() {
+export default function MCPKeyManager({ onKeyGenerated } = {}) {
   const [clients, setClients] = useState([]);
   const [newKeyName, setNewKeyName] = useState('');
   const [generatedKey, setGeneratedKey] = useState(null);
@@ -57,6 +57,7 @@ export default function MCPKeyManager() {
 
       setGeneratedKey(rawKey);
       setNewKeyName('');
+      onKeyGenerated?.(rawKey);
       await loadClients();
     } finally {
       setLoading(false);
